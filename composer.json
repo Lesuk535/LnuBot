@@ -1,0 +1,17 @@
+{
+    "name": "4erma/parser",
+
+
+    "autoload": {
+        "psr-4": {
+            "App\\": "src/"
+        }
+    },
+
+    "config": {
+        "optimize-autoloader": true
+    }
+
+}
+
+

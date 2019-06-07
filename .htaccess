@@ -1,0 +1,15 @@
+RewriteEngine on
+
+RewriteCond %{REQUEST_FILENAME} !-f
+
+RewriteRule .* public/index.php?route=$0 [QSA]
+
+AddDefaultCharset UTF-8
+
+<FilesMatch "\.(php)$">
+	Deny from all
+</FilesMatch>
+
+<FilesMatch "index.(php)$">
+	Allow from all
+</FilesMatch>

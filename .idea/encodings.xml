@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="Encoding">
+    <file url="file://$PROJECT_DIR$/cookie.txt" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/cookie.txt" charset="windows-1251" />
+    <file url="file://$PROJECT_DIR$/cookie2.txt" charset="windows-1251" />
+    <file url="file://E:/Курси/Видеокурс PHP парсеры (2015) Дмитрий Лаврик/2/parser_src_2/lib/curl.php" charset="UTF-8" />
+  </component>
+</project>

@@ -1,0 +1,2 @@
+{"update_id":826791865,
+"message":{"message_id":299,"from":{"id":366895633,"is_bot":false,"first_name":"Oles","username":"Lesuk535","language_code":"uk"},"chat":{"id":366895633,"first_name":"Oles","username":"Lesuk535","type":"private"},"date":1558202023,"text":"wwww"}}
