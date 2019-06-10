@@ -95,6 +95,24 @@ class Telegram
     }
 
     /**
+     * @param array $params
+     * @return mixed
+     */
+    public function deleteMessage(array $params)
+    {
+        return $this->sendRequest('deleteMessage', $params);
+    }
+
+    /**
+     * @param array $params
+     * @return mixed
+     */
+    public function editMessageText(array $params)
+    {
+        return $this->sendRequest('editMessageText', $params);
+    }
+
+    /**
      * @return mixed
      */
     public function setWebhook()

@@ -12,10 +12,6 @@ return [
         'defaults' => true,
     ],
 
-    'https://webshake.ru/' => [
-        'defaults' => true,
-    ],
-
     'http://elct.lnu.edu.ua' => [
         'defaults' => true,
         'setHeaders' => [

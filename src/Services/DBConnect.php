@@ -16,7 +16,9 @@ class DBConnect
      */
     private static $instance;
 
-
+    /**
+     * бере дані з конфігу ї їбошить підключення
+     */
     private function __construct()
     {
         $dbOptions = require __DIR__ . '/../../config/db.php';
@@ -26,6 +28,9 @@ class DBConnect
     }
 
     /**
+     *
+     * цю шнягу вже описував в телеграмі
+     *
      * @return DBConnect
      */
     public static function connect(): self
@@ -38,6 +43,7 @@ class DBConnect
     }
 
     /**
+     *
      * @param string $sql
      * @param array $params
      * @param string $className
@@ -63,3 +69,5 @@ class DBConnect
     }
 
 }
+
+// я чет не особо понимаю, к чему сдесь принцип единичной ответственности?

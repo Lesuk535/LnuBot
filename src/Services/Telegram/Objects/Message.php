@@ -7,7 +7,7 @@ namespace App\Services\Telegram\Objects;
  * Class Message
  *
  *
- * @method int             gwtMessageId()                   Unique message identifier inside this chat
+ * @method int             getMessageId()                   Unique message identifier inside this chat
  * @method User            getFrom()                        Optional. Sender, empty for messages sent to channels
  * @method int             getDate()                        Date the message was sent in Unix time
  * @method Chat            getChat()                        Conversation the message belongs to

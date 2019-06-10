@@ -4,7 +4,6 @@
 namespace App\Services\Routing;
 
 
-
 abstract class Router
 {
 
@@ -13,7 +12,6 @@ abstract class Router
     public function __construct(string $routes)
     {
         $this->routes = include ("$routes");
-
     }
 
     /**
@@ -40,7 +38,6 @@ abstract class Router
                 $action = ucfirst($action);
 
                 $parameters = $segment;
-
 
                 $controllerObject = new $controller();
 

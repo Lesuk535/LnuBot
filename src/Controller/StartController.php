@@ -4,58 +4,38 @@
 namespace App\Controller;
 
 use App\Models\TelegramUser;
-use App\Services\Telegram\Telegram;
-use App\Services\Curl\Curl;
+use App\Services\Telegram\Objects\CallbackQuery;
 use App\Services\Telegram\Objects\Message;
-use App\Services\Telegram\Objects\Chat;
 
 
-class StartController
+class StartController extends BaseController
 {
     public function startAction()
     {
-        $curlConfig = __DIR__ . '/../../config/curl.php';
-        $telegramConfig = __DIR__ . '/../../config/telegram.php';
-        $host = 'https://api.telegram.org';
-
-        $curl = Curl::app($host, $curlConfig);
-        $telegram = new Telegram($telegramConfig, $curl);
-
         $message = new Message();
+        $telegramUser = new TelegramUser();
 
         $chat = $message->getChat();
-
         $chatId = $chat->getId();
+        $messageId = $message->getMessageId();
+        $callbackData = $chatId . "/" . $messageId;
 
-        $telegramUser = new TelegramUser();
 
         $telegramUser->register($chatId);
 
         $keyboard = [
-            "inline_keyboard" => [[
-                [
-                    "text" => "Комп'ютерні науки (ФЕІ)",
-                    "callback_data" => "/fei"
-                ],
-                [
-                    "text" => "Мікро та нано електроніка (ФЕМ)",
-                    "callback_data" => "/fem"
-                ],
-                [
-                    "text" => "Інформаційні системи (ФЕС)",
-                    "callback_data" => "/fec"
-                ],
-            ]],
+            "inline_keyboard" => [
+                [["text" => "Комп'ютерні науки (ФЕІ)", "callback_data" => "/fei/" . $callbackData]],
+                [["text" => "Мікро та нано електроніка (ФЕМ)", "callback_data" => "/fem/" . $callbackData]],
+                [["text" => "Інформаційні системи (ФЕС)", "callback_data" => "/fec/" . $callbackData]]
+            ],
         ];
 
-
-        $telegram->sendMessage([
+        $this->telegram->sendMessage([
             "chat_id" => $chatId,
-            "text" => "Виберіть напрям",
+            "text" => $message->getMessageId(),
             "reply_markup" => json_encode($keyboard),
         ]);
-
-
 
     }
 }
