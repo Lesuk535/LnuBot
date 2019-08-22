@@ -25,6 +25,14 @@ class WeekType extends ActiveRecordEntity
     }
 
     /**
+     * @return mixed
+     */
+    public function getType()
+    {
+        return $this->type;
+    }
+
+    /**
      * @return string
      */
     protected static function getTableName()

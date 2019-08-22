@@ -25,6 +25,14 @@ class Groups extends ActiveRecordEntity
     }
 
     /**
+     * @return mixed
+     */
+    public function getNumber()
+    {
+        return $this->getNumber();
+    }
+
+    /**
      * @return string
      */
     protected static function getTableName()

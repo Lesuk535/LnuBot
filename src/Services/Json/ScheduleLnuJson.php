@@ -9,6 +9,7 @@ use App\Models\Courses;
 use App\Models\Days;
 use App\Models\Faculties;
 use App\Models\Groups;
+use App\Models\HalfLesson;
 use App\Models\Lessons;
 use App\Models\Subgroups;
 use App\Models\Subjects;
@@ -50,9 +51,9 @@ class ScheduleLnuJson
      */
     private $subgroups;
 
-    public function __construct(string $config)
+    public function __construct()
     {
-        $this->config = require_once ("$config");
+        $this->config = require_once (__DIR__ . '/../../../config/json.php');
 
         $className = $this->getClassName();
 
@@ -129,7 +130,7 @@ class ScheduleLnuJson
      */
     public function insertAudience(Audience $audience)
     {
-        $this->insertArrayToDb($audience, 'setName', $this->getAudience());
+        $this->insertArrayToDb($audience, 'name', $this->getAudience());
     }
 
     /**
@@ -137,7 +138,7 @@ class ScheduleLnuJson
      */
     public function insertSubjects(Subjects $subjects)
     {
-        $this->insertArrayToDb($subjects, 'setName', $this->getSubjects());
+        $this->insertArrayToDb($subjects, 'name', $this->getSubjects());
     }
 
     /**
@@ -145,7 +146,7 @@ class ScheduleLnuJson
      */
     public function insertSubjectType(SubjectType $subjectType)
     {
-        $this->insertArrayToDb($subjectType, 'setName', $this->getSubjectType());
+        $this->insertArrayToDb($subjectType, 'name', $this->getSubjectType());
     }
 
     /**
@@ -153,7 +154,7 @@ class ScheduleLnuJson
      */
     public function insertTeachers(Teachers $teachers)
     {
-        $this->insertArrayToDb($teachers, 'setName', $this->getTeachers());
+        $this->insertArrayToDb($teachers, 'name', $this->getTeachers());
     }
 
     public function insertSchedule()
@@ -166,7 +167,6 @@ class ScheduleLnuJson
         foreach ($this->faculties as $value) {
             $this->getCourse($value);
         }
-
     }
 
     /**
@@ -188,7 +188,6 @@ class ScheduleLnuJson
         for ($i = 1; $i <= 5; $i++) {
             $this->getDay($faculty, $course, $i);
         }
-
     }
 
     /**
@@ -216,234 +215,61 @@ class ScheduleLnuJson
         string $day
     )
     {
+        $schedule = new Schedule();
+
         for ($i = 1; $i <= 6; $i++) {
-            $weekTypes = $this->getWeekTypesKey(
-                $faculty, $course, $group, $day, $i
-            );
 
-            $subgroups = $this->getSubgroupsKeyByLesson(
-                $faculty, $course, $group, $day, $i
-            );
+            $lessons = $this->jsonData[$faculty.$course.$group][$day][$i];
 
-            $lessonInfo = $this->jsonData[$faculty.$course.$group][$day][$i];
+            $hasLessonType = $this->hasLessonType($lessons);
 
-            if (!empty($weekTypes) || count($weekTypes) > 0) {
-                foreach ($weekTypes as $key => $value) {
-                    if ($value === 'firstWeekType') {
-                        $this->getWeekType(
-                            $faculty, $course, $group, $day, $i, 'firstWeekType'
-                        );
-                    } elseif ($value === 'secondWeekType') {
-                        $this->getWeekType(
-                            $faculty, $course, $group, $day, $i, 'secondWeekType');
-                    }
-                }
-            } elseif (!empty($subgroups) || count($subgroups) > 0) {
-                $subgroups = $this->getSubgroupsKeyByLesson(
-                    $faculty, $course, $group, $day, $i
-                );
+            if (empty($lessons))
+                continue;
 
-                foreach ($subgroups as $value) {
-                    if ($value === 'firstSubgroup') {
-                        $this->getSubgroupByLesson(
-                            $faculty, $course, $group, $day, $i, 'firstSubgroup'
-                        );
-                    } else {
-                        $this->getSubgroupByLesson(
-                            $faculty, $course, $group, $day, $i, 'secondSubgroup'
-                        );
-                    }
-                }
+            if ($hasLessonType === true) {
+                $this->getLessonType($faculty, $course, $group, $day, $i, $lessons);
             } else {
-
-                $id = $this->getIdByArray(
-                    $faculty, $course, $group, $day, $i, '', '', $lessonInfo
-                );
-
-                $schedule = new Schedule();
-
-
-                $this->insertScheduleToDb($schedule,$id);
-
-                //TODO Кінець, треба метод, що інсертить всі дані
+                $id = $this->getIdByArray($faculty, $course, $group, $day, $i, $lessons);
+                $this->insertScheduleToDb($schedule, $id);
             }
-
         }
+
     }
 
-    /**
-     * @param string $faculty
-     * @param string $course
-     * @param string $group
-     * @param string $day
-     * @param string $lesson
-     * @return array
-     */
-    private function getWeekTypesKey(
+    public function getLessonType(
         string $faculty,
         string $course,
         string $group,
         string $day,
-        string $lesson
+        int $lesson,
+        array $data
     )
     {
-        $weekTypes =[];
-
-        foreach ($this->weekType as $value) {
-
-            $data = $this->jsonData[$faculty.$course.$group][$day][$lesson][$value];
-
-            if (!empty($data))
-                $weekTypes[] = $value;
-        }
-
-        return $weekTypes;
-    }
-
-    /**
-     * @param string $faculty
-     * @param string $course
-     * @param string $group
-     * @param string $day
-     * @param string $lesson
-     * @return array
-     */
-    private function getSubgroupsKeyByLesson(
-        string $faculty,
-        string $course,
-        string $group,
-        string $day,
-        string $lesson
-    )
-    {
-        $subgroups = [];
-
-        foreach ($this->subgroups as $key => $value) {
-            $data = $this->jsonData[$faculty.$course.$group][$day][$lesson][$key];
-
-            if (!empty($data)) {
-                $subgroups[] = $key;
-            }
-
-        }
-
-        return $subgroups;
-    }
-
-    /**
-     * @param string $faculty
-     * @param string $course
-     * @param string $group
-     * @param string $day
-     * @param string $lesson
-     * @param string $weekType
-     */
-    private function getWeekType(
-        string $faculty, 
-        string $course, 
-        string $group, 
-        string $day, 
-        string $lesson,
-        string $weekType
-    )
-    {
-        $subgroups = $this->getSubgroupsKeyByWeekType(
-            $faculty, $course, $group, $day, $lesson, $weekType
-        );
-
-        $lessonInfo = $this->jsonData[$faculty.$course.$group][$day][$lesson][$weekType];
-        $lessonInfoKeys= array_keys($lessonInfo);
-
-        if (!empty($subgroups) || count($subgroups) > 0) {
-            foreach ($subgroups as $value) {
-                if ($value === 'firstSubgroup') {
-                    $this->getSubgroupByWeekType(
-                        $faculty, $course, $group, $day, $lesson, $weekType, 'firstSubgroup'
-                    );
-                } else {
-                    $this->getSubgroupByWeekType(
-                        $faculty, $course, $group, $day, $lesson, $weekType, 'secondSubgroup'
-                    );
-                }
-            }
-        } elseif (count($lessonInfoKeys) > 2) {
-
-            $id = $this->getIdByArray(
-                $faculty, $course, $group, $day, $lesson, $weekType, '', $lessonInfo
-            );
-
-            $schedule = new Schedule();
-
-
-            $this->insertScheduleToDb($schedule,$id);
-
-
-
-            //TODO Кінець, треба метод, що інсертить всі дані
-        }
-    }
-
-    /**
-     * @param string $faculty
-     * @param string $course
-     * @param string $group
-     * @param string $day
-     * @param string $lesson
-     * @param string $subgroup
-     */
-    private function getSubgroupByLesson(
-        string $faculty,
-        string $course,
-        string $group,
-        string $day,
-        string $lesson,
-        string $subgroup
-    )
-    {
-        $lessonInfo = $this->jsonData[$faculty.$course.$group][$day][$lesson][$subgroup];
-
-        $id = $this->getIdByArray(
-            $faculty, $course, $group, $day, $lesson, '', $subgroup, $lessonInfo
-        );
 
         $schedule = new Schedule();
 
-        $this->insertScheduleToDb($schedule, $id);
+        foreach ($data as $key => $value ) {
 
-        //TODO Кінець, треба метод, що інсертить всі дані
+            if (empty($value))
+                continue;
+
+            $id = $this->getIdByArray($faculty, $course, $group, $day, $lesson, $value);
+            $this->insertScheduleToDb($schedule, $id);
+
+        }
+
     }
 
-    /**
-     * @param string $faculty
-     * @param string $course
-     * @param string $group
-     * @param string $day
-     * @param string $lesson
-     * @param string $weekType
-     * @param string $subgroup
-     */
-    private function getSubgroupByWeekType(
-        string $faculty,
-        string $course,
-        string $group,
-        string $day,
-        string $lesson,
-        string $weekType,
-        string $subgroup
-    )
+    public function hasLessonType(array $data)
     {
-        $lessonInfo = $this->jsonData[$faculty.$course.$group][$day][$lesson][$weekType][$subgroup];
-
-        $id = $this->getIdByArray(
-            $faculty, $course, $group, $day, $lesson, $weekType, $subgroup, $lessonInfo
-        );
-
-        $schedule = new Schedule();
-
-        $this->insertScheduleToDb($schedule, $id);
-
-        //TODO Кінець, треба метод, що інсертить всі дані
+        foreach ($data as $key => $value) {
+            if (is_array($value)) {
+                return true;
+            }
+        }
+        return false;
     }
+
 
     /**
      * @param string $faculty
@@ -451,8 +277,6 @@ class ScheduleLnuJson
      * @param string $group
      * @param string $day
      * @param string $lesson
-     * @param string $weekType
-     * @param string $subgroup
      * @param array $lessonInfo
      * @return array
      */
@@ -462,8 +286,6 @@ class ScheduleLnuJson
         string $group,
         string $day,
         string $lesson,
-        string $weekType,
-        string $subgroup,
         array $lessonInfo
     ): array
     {
@@ -473,46 +295,16 @@ class ScheduleLnuJson
             'id_group' => $this->getGroupId($group),
             'id_day' => $this->getDayId($day),
             'id_lesson' => $this->getLessonId($lesson),
-            'id_week_type' => $this->getWeekTypeId($weekType),
-            'id_subgroup' => $this->getSubgroupId($subgroup),
+            'id_week_type' => $this->getWeekTypeId($lessonInfo['weekType']),
+            'id_subgroup' => $this->getSubgroupId($lessonInfo['subgroup']),
             'id_subject' => $this->getSubjectId($lessonInfo['subject']),
             'id_subject_type' => $this->getSubjectTypeId($lessonInfo['subjectType']),
             'id_teacher' => $this->getTeachersId($lessonInfo['teacher']),
-            'id_audience' => $this->getAudienceId($lessonInfo['audience'])
+            'id_audience' => $this->getAudienceId($lessonInfo['audience']),
+            'id_half_lesson' => $this->getHalfLessonId($lessonInfo['halfLesson'])
         ];
     }
 
-    /**
-     * @param string $faculty
-     * @param string $course
-     * @param string $group
-     * @param string $day
-     * @param string $lesson
-     * @param string $weekType
-     * @return array
-     */
-    private function getSubgroupsKeyByWeekType(
-        string $faculty, 
-        string $course, 
-        string $group, 
-        string $day, 
-        string $lesson, 
-        string $weekType
-    )
-    {
-        $subgroups = [];
-
-        foreach ($this->subgroups as $key => $value) {
-            $data = $this->jsonData[$faculty.$course.$group][$day][$lesson][$weekType][$key];
-
-            if (!empty($data)) {
-                $subgroups[] = $key;
-            }
-
-        }
-
-        return $subgroups;
-    }
 
     /**
      * @param string $faculty
@@ -571,9 +363,9 @@ class ScheduleLnuJson
      */
     private function getWeekTypeId(string $weekType)
     {
-        if ($weekType === 'firstWeekType') {
+        if ($weekType === 'чис.') {
             $weekType = 'numerator';
-        } elseif ($weekType === 'secondWeekType') {
+        } elseif ($weekType === 'знам.') {
             $weekType = 'denominator';
         }
 
@@ -587,12 +379,6 @@ class ScheduleLnuJson
      */
     private function getSubgroupId(string $subgroup)
     {
-        if ($subgroup === 'firstSubgroup') {
-            $subgroup = '1';
-        } elseif ($subgroup === 'secondSubgroup') {
-            $subgroup = '2';
-        }
-
         $subgroupsModel = new Subgroups();
         return $this->getId($subgroupsModel, 'number', $subgroup);
     }
@@ -637,6 +423,12 @@ class ScheduleLnuJson
         return $this->getId($audienceModel, 'name', $audience);
     }
 
+    private function getHalfLessonId(string $halfLesson)
+    {
+        $halfLessonModel = new HalfLesson();
+        return $this->getId($halfLessonModel, 'number', $halfLesson);
+    }
+
     /**
      * @param ActiveRecordEntity $model
      * @param string $columnName
@@ -653,16 +445,26 @@ class ScheduleLnuJson
 
     /**
      * @param ActiveRecordEntity $model
-     * @param $setColumn
+     * @param $column
      * @param $data
      */
-    private function insertArrayToDb(ActiveRecordEntity $model, $setColumn, $data)
+    private function insertArrayToDb(ActiveRecordEntity $model, $column, $data)
     {
         $data = array_unique($data, SORT_REGULAR);
+        $setColumn = 'set' . ucfirst($column);
 
         foreach ($data as $value) {
             $model->$setColumn($value);
+
+            $id = $model->getIdByColumn('name', $value);
+
+            if ($id !== null) {
+                $id = $id->getId();
+                $model->setId($id);
+            }
+
             $model->save();
+            $model->setId(null);
         }
     }
 
@@ -672,7 +474,6 @@ class ScheduleLnuJson
      */
     private function insertScheduleToDb(ActiveRecordEntity $schedule, array $id)
     {
-
         foreach ($id as $key => $value) {
 
             if ($value === null)
@@ -682,9 +483,10 @@ class ScheduleLnuJson
             $column = $this->underscoreToCamelCase($column);
 
             $schedule->$column($value);
+            $schedule->setId(null);
         }
 
-//        $schedule->save();
+        $schedule->save();
 
     }
 

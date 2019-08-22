@@ -18,11 +18,11 @@ class Days extends ActiveRecordEntity
     }
 
     /**
-     * @param int $number
+     * @param string $name
      */
-    public function setName(int $number)
+    public function setName(string $name)
     {
-        $this->name = $number;
+        $this->name = $name;
     }
 
     /**

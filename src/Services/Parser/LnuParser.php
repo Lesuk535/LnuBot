@@ -6,6 +6,7 @@ namespace App\Services\Parser;
 use App\Services\Curl\Curl;
 
 
+
 class LnuParser
 {
     /**
@@ -21,7 +22,7 @@ class LnuParser
     /**
      * @var array
      */
-    private $data;
+    public $data;
 
     /**
      * @var array
@@ -58,11 +59,11 @@ class LnuParser
         $this->htmlParser = $htmlParser;
         $this->curl = $curl;
         $this->days = [
-            'Понеділок',
-            'Вівторок',
-            'Середа',
-            'Четвер',
-            'Пятниця'
+            'Пн',
+            'Вт',
+            'Ср',
+            'Чт',
+            'Пт'
         ];
         $this->faculties = [
             'FEM' => 'M',
@@ -74,13 +75,7 @@ class LnuParser
     public function run()
     {
         $this->parseFacultySubjects();
-//        $this->parseWeekSubjects('M', '1', '1');
-//        var_dump($this->data);
-        $this->saveParseData(['data']);
-
-//        var_dump($this->audience);
-
-        return $this->data;
+        $this->saveParseData(['data', 'audience', 'subjects', 'subjectType', 'teacher']);
     }
 
     private function saveParseData(array $data)
@@ -117,11 +112,12 @@ class LnuParser
                 $faculty = 'I';
 
             $response = $this->getRozkResponse();
+            
             $this->htmlParser->setString($response);
+            
             $this->data[$faculty.$kurs.$numGroup][$this->days[$day-1]][$i] = $this->getData();
 
-
-
+            
             if ($faculty === 'I')
                 $faculty = '';
         }
@@ -215,7 +211,7 @@ class LnuParser
             $data = $this->getSubgroupBlock();
 
         if ($data === false)
-            $data = $this->getWeekTypeBlock();
+            $data = $this->getHorizontalBlock();
 
         if ($data === false)
             $data = $this->getSubgroupAndWeekTypeBlock();
@@ -291,7 +287,6 @@ class LnuParser
 
         $blockName = substr($blockName, 0, strrpos($blockName, '-'));
 
-
         return $blockName;
     }
 
@@ -323,15 +318,84 @@ class LnuParser
 
         if ($block === false)
             return false;
-        
-        $all = $this->getSubBlock('Subgroup', 'td');
-        return $this->getSubBlockData($all);
+
+        $subBlock = $this->getSubBlockInSubgroup();
+
+        $this->htmlParser->defaultCursor();
+
+        $this->htmlParser->moveTo(
+            '<td  bgcolor=#EEEEEE nowrap width=50% height=100% rowspan=2 >'
+        );
+
+        if ($subBlock == false) {
+            $all = $this->getSubBlock('td');
+            return $this->getSubBlockData($all, true);
+        }
+
+        $bigBlock = $this->htmlParser->subTag("<td", "td");
+
+        $str = $this->htmlParser->getString();
+
+        $withWeekTypeBlock = '<td  bgcolor=#EEEEEE nowrap width=50% height=50% >';
+        $block = '<td  bgcolor=#EEEEEE nowrap width=50% height=100% rowspan=2 >';
+
+        $withWeekTypeBlockCursorPos = strpos($str, $withWeekTypeBlock);
+        $bigBlockCursorPos = strpos($str, $block);
+
+        $this->htmlParser->setString($bigBlock);
+
+        if ($withWeekTypeBlockCursorPos > $bigBlockCursorPos) {
+            $bigBlockSubgroup = 1;
+            $withWeekTypeBlockSubgroup = 2;
+        } else {
+            $bigBlockSubgroup = 2;
+            $withWeekTypeBlockSubgroup = 1;
+        }
+
+        $bigBlock = $this->getSubBlockData([$bigBlock], $bigBlockSubgroup);
+
+        $data = $this->getSubBlockData($subBlock, $withWeekTypeBlockSubgroup);
+
+        $data[] = $bigBlock[0];
+
+        return $data;
+    }
+
+    /**
+     * @return array|bool
+     */
+    private function getSubBlockInSubgroup()
+    {
+        $this->htmlParser->defaultCursor();
+
+        $block = $this->htmlParser->moveTo(
+            '<td  bgcolor=#EEEEEE nowrap width=50% height=50% >'
+        );
+
+        if ($block === false)
+            return false;
+
+        $first = $this->htmlParser->subTag("<td", "td");
+
+        $this->htmlParser->moveAfter("</td>");
+
+        $this->htmlParser->moveTo(
+            '<td  bgcolor=#EEEEEE nowrap width=50% height=50% >'
+        );
+
+        $second = $this->htmlParser->subTag("<td", "td");
+
+        return [
+            $first,
+            $second
+        ];
+
     }
 
     /**
      * @return array|bool|null
      */
-    private function getWeekTypeBlock()
+    private function getHorizontalBlock()
     {
         $block = $this->htmlParser->moveTo(
             '<td  bgcolor=#EEEEEE nowrap width=100% colspan=2  height=50% >'
@@ -340,8 +404,60 @@ class LnuParser
         if ($block === false)
             return false;
 
-        $all = $this->getSubBlock('WeekType', 'td');
-        return $this->getSubBlockData($all);
+        $bigBlock = $this->htmlParser->subTag("<td", "td");
+
+        $subBlock = $this->getSubBlogInHorizontalBlock();
+
+        $this->htmlParser->defaultCursor();
+
+        if ($subBlock === false) {
+            $this->htmlParser->moveTo(
+                '<td  bgcolor=#EEEEEE nowrap width=100% colspan=2  height=50% >'
+            );
+            $all = $this->getSubBlock('td');
+            return $this->getSubBlockData($all);
+        }
+
+
+        $bigBlock = $this->getSubBlockData([$bigBlock]);
+
+        $data = $this->getSubBlockData($subBlock, true);
+
+
+        $data[] = $bigBlock[0];
+
+        return $data;
+
+    }
+
+    /**
+     * @return array|bool
+     */
+    private function getSubBlogInHorizontalBlock()
+    {
+        $this->htmlParser->defaultCursor();
+
+        $block = $this->htmlParser->moveTo(
+            '<td  bgcolor=#EEEEEE nowrap width=50% height=50% >'
+        );
+
+        if ($block === false)
+            return false;
+
+        $first = $this->htmlParser->subTag("<td", "td");
+
+        $this->htmlParser->moveAfter("</td>");
+
+        $this->htmlParser->moveTo(
+            '<td  bgcolor=#EEEEEE nowrap width=50% height=50% >'
+        );
+
+        $second = $this->htmlParser->subTag("<td", "td");
+
+        return [
+            $first,
+            $second
+        ];
 
     }
 
@@ -353,25 +469,31 @@ class LnuParser
         $this->htmlParser->moveAfter('<table border=0 cellpadding=0 cellspacing=1 width=100% height=100%>');
         $this->htmlParser->moveAfter('<tbody>');
 
-        $types = $this->getSubBlock('WeekType', 'tr');
+        $types = $this->getSubBlock('tr');
 
         $data = [];
 
         foreach ($types as $key => $value) {
-            $this->htmlParser->setString($types[$key]);
-            $SubBlocks = $this->getSubBlock('Subgroup', 'td');
-            $data[$key] = $this->getSubBlockData($SubBlocks);
+            $this->htmlParser->setString($value);
+            $subBlocks = $this->getSubBlock('td');
+            $subBlocksData = $this->getSubBlockData($subBlocks, true);
+
+            foreach ($subBlocksData as $subValue) {
+                if (!empty($subValue))
+                    $data[] = $subValue;
+            }
+
         }
+
 
         return $data;
     }
 
     /**
-     * @param string $dataName
      * @param string $subTag
      * @return array
      */
-    private function getSubBlock(string $dataName, string $subTag): array
+    private function getSubBlock(string $subTag): array
     {
         $first = $this->htmlParser->subTag("<$subTag", $subTag);
 
@@ -379,19 +501,18 @@ class LnuParser
 
         $second = $this->htmlParser->subTag("<$subTag", $subTag);
 
-        return [
-            'first' . $dataName => $first,
-            'second'. $dataName=> $second
-        ];
+        return [$first, $second];
     }
 
     /**
      * @param array $all
+     * @param bool $subgroup
      * @return array|null
      */
-    private function getSubBlockData(array $all): ?array
+    private function getSubBlockData(array $all, $subgroup = false): ?array
     {
         foreach ($all as $key => $value) {
+
             $this->htmlParser->setString($value);
             $center = $this->htmlParser->moveAfter('<center>');
 
@@ -399,7 +520,17 @@ class LnuParser
                 $all[$key] = [];
             } else {
                 $data = $this->getCenterBlock();
+
                 $all[$key] = $data;
+
+                if ($subgroup === true) {
+                    var_dump($key);
+                    $all[$key]['subgroup'] = $key + 1;
+                }
+
+                if (is_int($subgroup)) {
+                    $all[$key]['subgroup'] = $subgroup;
+                }
             }
         }
 
@@ -411,6 +542,30 @@ class LnuParser
      */
     private function getCenterBlock(): ?array
     {
+        $this->htmlParser->defaultCursor();
+
+        $sybgroupOrWeekType = $this->htmlParser->moveAfter('<font size=-1 color=red>');
+
+        $weekType = '';
+        $half_lesson = '';
+
+        if ($sybgroupOrWeekType === true) {
+            $this->htmlParser->moveAfter('<i>');
+            $this->htmlParser->moveAfter('<b>');
+
+            $data = trim($this->htmlParser->readTo('<'));
+
+
+            if ($data === 'знам.' || $data === 'чис.') {
+                $weekType = $data;
+            } elseif ($data === '1 півпара' || $data === '2 півпара') {
+                $half_lesson = $data;
+            }
+
+        } else {
+            $this->htmlParser->defaultCursor();
+        }
+
         $this->htmlParser->moveAfter('<b>');
         $this->htmlParser->moveAfter('<center>');
 
@@ -444,7 +599,10 @@ class LnuParser
             'subject' => $subject,
             'subjectType' => $subjectType,
             'teacher' => $teacher,
-            'audience' => $audience
+            'audience' => $audience,
+            'weekType' => $weekType,
+            'subgroup' => '',
+            'halfLesson' => $half_lesson
         ];
     }
 

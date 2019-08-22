@@ -13,11 +13,9 @@ class SubjectsController
     {
         $scheduleLnuJson = new ScheduleLnuJson();
 
-        $data = __DIR__.'/../services/parser/data/subjects.json';
-
         $subjects = new Subjects();
 
-        $scheduleLnuJson->insertSubjects($subjects, $data);
+        $scheduleLnuJson->insertSubjects($subjects);
     }
 
 }

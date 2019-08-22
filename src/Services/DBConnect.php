@@ -16,9 +16,7 @@ class DBConnect
      */
     private static $instance;
 
-    /**
-     * бере дані з конфігу ї їбошить підключення
-     */
+
     private function __construct()
     {
         $dbOptions = require __DIR__ . '/../../config/db.php';
@@ -28,9 +26,6 @@ class DBConnect
     }
 
     /**
-     *
-     * цю шнягу вже описував в телеграмі
-     *
      * @return DBConnect
      */
     public static function connect(): self
@@ -43,13 +38,12 @@ class DBConnect
     }
 
     /**
-     *
      * @param string $sql
      * @param array $params
      * @param string $className
-     * @return array|null
+     * @return array|bool|null
      */
-    public function dbQuery(string $sql, array $params, $className = 'stdClass'): ?array
+    public function dbQuery(string $sql, array $params, $className = 'stdClass')
     {
         $query = $this->pdo->prepare($sql);
         $result = $query->execute($params);
@@ -69,5 +63,3 @@ class DBConnect
     }
 
 }
-
-// я чет не особо понимаю, к чему сдесь принцип единичной ответственности?

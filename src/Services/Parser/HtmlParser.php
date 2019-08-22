@@ -124,10 +124,8 @@ class HtmlParser
      */
     public function subTag($start, $tag)
     {
-//        $start = mb_substr($start, 0, -1);
 
         $cursorPos = strpos($this->str, $start, $this->cursor);
-
 
         if ($cursorPos === false)
             return false;

@@ -25,6 +25,11 @@ class Subgroups extends ActiveRecordEntity
         $this->number = $number;
     }
 
+    public function getNumber()
+    {
+        return $this->number;
+    }
+
     /**
      * @return string
      */

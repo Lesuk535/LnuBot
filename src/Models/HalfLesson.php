@@ -1,14 +1,12 @@
 <?php
 
-
 namespace App\Models;
 
 use App\Services\DBConnect;
 
 
-class Courses extends ActiveRecordEntity
+class HalfLesson extends  ActiveRecordEntity
 {
-
     protected $number;
 
     public function __construct()
@@ -26,18 +24,10 @@ class Courses extends ActiveRecordEntity
     }
 
     /**
-     * @return mixed
-     */
-    public function getNumber()
-    {
-        return $this->getNumber();
-    }
-
-    /**
      * @return string
      */
     protected static function getTableName()
     {
-        return 'courses';
+        return 'half_lesson';
     }
 }
